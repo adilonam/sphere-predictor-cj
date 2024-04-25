@@ -74,4 +74,4 @@ with st.form(key='predict_form'):
         predicted_color_value = st.session_state.linear_regression.predict(df)
         st.write(f'Predicted Color Value: {predicted_color_value}')
 
-        st.color_picker('Pick a color', value="#" + predicted_color_value, key='color_picker')
+        st.color_picker('Predicted color', value="#" + predicted_color_value, key='color_picker')
