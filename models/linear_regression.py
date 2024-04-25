@@ -1,39 +1,49 @@
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+from .abstract_model import AbstractModel
+from sklearn.metrics import mean_squared_error  
 
 
-class linear_regression:
 
-    def fit(data):
-        # Assuming 'data' is a pandas DataFrame containing your data as provided in the original format
-        # Convert the date columns (excluding the 'NAME' column)
-        for col in data.columns[1:]:
-            data[col] = data[col].apply(lambda x: int(x, 16))
+class LinReg(AbstractModel):
 
-        # Processing the DataFrame 'data' to have "date", "name", "color_value" columns
-        data_long = pd.melt(data, id_vars=['NAME'], var_name='date', value_name='color_value')
-        data_long['date'] = pd.to_datetime(data_long['date'])
-
-        # Convert dates to a numerical value, such as the day of the year
-        data_long['day_of_year'] = data_long['date'].dt.dayofyear
-
-        # Prepare the dataset for Linear Regression
-        X = data_long['day_of_year'].values.reshape(-1, 1)  # Feature
-        y = data_long['color_value'].values  # Target
+    def fit(self , uploaded_file):
+        long_df = self.process_excel(uploaded_file)
+        X = long_df[['day_of_year', 'name_as_number']].values  # Features
+        y = long_df['color_value'].values  # Target
 
         # Splitting the dataset into the Training set and Test set
-        
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        self.regressor = LinearRegression()
+        self.regressor.fit(X_train, y_train)
 
-        # Create and train the model
-        regressor = LinearRegression()
-        regressor.fit(X_train, y_train)
+        # get accuracy
+        predicted_colors = self.regressor.predict(X_test)
+        predicted_colors =  [round(x) for x in predicted_colors]
+        self.mse = mean_squared_error(y_test, predicted_colors)
+        # Calculate the number of correct predictions
+        correct_predictions = sum(y_test == predicted_colors)
+        # Calculate the total number of predictions
+        total_predictions = len(predicted_colors)
+        # Calculate the percentage of correct predictions
+        self.accuracy_percentage = (correct_predictions / total_predictions)
+        return True
+    
+    def predict(self , long_df):
+        long_df['day_of_year'] = long_df['date'].dt.dayofyear
+        long_df['name_as_number'] = long_df['NAME'].str.extract('(\d+)').astype(int)
 
-        # Predicting new values (You would add new 'day_of_year' values here to make predictions)
-        predicted_colors = regressor.predict(X_test)
+        X = long_df[['day_of_year', 'name_as_number']].values  # Features
+        predicted_colors = self.regressor.predict(X)
+        color_code = round(predicted_colors[0]) if round(predicted_colors[0]) < len(self.color_code_to_hex_mapping) else len(self.color_code_to_hex_mapping) -1
+        
+        return self.color_code_to_hex_mapping[color_code]
 
-        # If you want to see the predicted hexadecimal color value
-        predicted_hex_colors = [hex(int(value))[2:].upper().zfill(8) for value in predicted_colors]
 
-        # The `predicted_hex_colors` now contains the predicted colors in hexadecimal format.
+
+    
+
+
+
+
