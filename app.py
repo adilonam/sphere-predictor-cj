@@ -47,6 +47,7 @@ with st.form(key='predict_form'):
     st.write("Enter details for color value prediction:")
     input_name = st.text_input('NAME (e.g. "GJ1")')
     input_date = st.date_input('Date')
+    input_value = st.number_input('Value')
 
     submit_button = st.form_submit_button(label='Predict Color Value')
 
@@ -56,7 +57,8 @@ with st.form(key='predict_form'):
         # Predict data
         data = {
             'NAME': [input_name],
-            'date': [input_datetime]
+            'date': [input_datetime],
+            'value': [input_datetime]
         }
         df = pd.DataFrame(data)
 
