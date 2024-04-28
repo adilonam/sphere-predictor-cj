@@ -15,6 +15,11 @@ if 'linear_regression' not in st.session_state:
 
 # File uploader widget
 uploaded_file = st.file_uploader("Upload your Excel file (.xlsx)", type=['xlsx'])
+    # Function to apply a background color to cells in a DataFrame
+def colorize(val):
+    color = f'background-color: #{val}' if pd.notnull(val) else ''
+    return color
+
 
 if uploaded_file:
     # Process and display the Excel file
@@ -22,58 +27,25 @@ if uploaded_file:
     st.write("DataFrame preview (with background color codes as values):")
     st.dataframe(df)
 
-    long_df = st.session_state.linear_regression.process_excel(uploaded_file)
-    st.write("DataFrame preprocessed preview:")
-    st.dataframe(long_df)
-
-    # Display DataFrame information using StringIO buffer
-    buffer = io.StringIO()
-    long_df.info(buf=buffer)
-    s = buffer.getvalue()
-    st.text("DataFrame Information:")
-    st.code(s)
 
     # Button to train the model that uses session state
-    if st.button('Train Model'):
-        model_trained = st.session_state.linear_regression.fit(uploaded_file)
-
+    if st.button('Train Model & predict'):
+        long_df  = st.session_state.linear_regression.process_excel(uploaded_file)
+        model_trained = st.session_state.linear_regression.fit(long_df)
         if model_trained:
             st.success('The model has been successfully trained!')
             st.write(f'Mean Squared Error: {st.session_state.linear_regression.mse:.2f}')
             st.write(f'Accuracy Percentage: {st.session_state.linear_regression.accuracy_percentage * 100:.2f}%')
+        predicted_df = st.session_state.linear_regression.predict()
+        if not predicted_df.empty:
+            st.write("Predicted DataFrame with next_color codes:")
+            # Apply the coloring function to the 'next_color' column
+            st.dataframe(predicted_df.style.applymap(colorize, subset=['next_color']))
+        else:
+            st.error('No predictions to display. Ensure model is trained and data is available.')
 
-# Prediction form
-with st.form(key='predict_form'):
-    st.write("Enter details for color value prediction:")
-    input_name = st.text_input('NAME (e.g. "GJ1")')
-    input_date = st.date_input('Date')
-    input_value = st.number_input('Value')
+        
 
-    submit_button = st.form_submit_button(label='Predict Color Value')
 
-    if submit_button and input_name and input_date:
-        input_datetime = datetime.combine(input_date, datetime.min.time())
 
-        # Predict data
-        data = {
-            'NAME': [input_name],
-            'date': [input_datetime],
-            'value': [input_datetime]
-        }
-        df = pd.DataFrame(data)
 
-        # Display DataFrame and information
-        st.write("DataFrame to predict with:")
-        st.dataframe(df)
-
-        buffer = io.StringIO()
-        df.info(buf=buffer)
-        s = buffer.getvalue()
-        st.text("DataFrame Information:")
-        st.code(s)
-
-        # Make prediction using session state
-        predicted_color_value = st.session_state.linear_regression.predict(df)
-        st.write(f'Predicted Color Value: {predicted_color_value}')
-
-        st.color_picker('Predicted color', value="#" + predicted_color_value, key='color_picker')

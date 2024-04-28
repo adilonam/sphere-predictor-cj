@@ -2,13 +2,16 @@ import pandas as pd
 import openpyxl
 import io
 import tempfile
-
+from sklearn.model_selection import train_test_split
 
 
 
 class AbstractModel:
     
     color_mapping = {}
+    features = ['date', 'name_code' , 'value', 'color_code']
+    target = 'next_color_code'
+    X_predict = None
 
     def preprocess_excel(self , uploaded_file):
         # Load the workbook
@@ -35,38 +38,49 @@ class AbstractModel:
 
             # Concatenate the Series into a new DataFrame
             self.last_df = pd.concat([first_column, last_column], axis=1)
-
+            self.row_count =  df.shape[0]
             
             return df
         
 
 
     def process_data(self ,df):
-
-
+        if self.color_mapping:
+            raise Exception("data process has already processed")
+        long_df = df
+        first_col_header = long_df.columns[0]
+        long_df.columns = [first_col_header] + [i for i in range(1, len(long_df.columns))]
+        long_df['name_code'] = long_df.index +1
         # Processing the DataFrame 'data' to have "date", "name", "color_value" columns
-        long_df = pd.melt(df, id_vars=['NAME'], var_name='date', value_name='color_and_value')
-
-
+        long_df = pd.melt(df, id_vars=['NAME' , 'name_code'], var_name='date', value_name='color_and_value')
         # Convert dates and name to a numerical value, 
-        long_df['date'] = pd.to_datetime(long_df['date'])  
-        long_df['day_of_year'] = long_df['date'].dt.dayofyear
-        long_df['name_as_number'] = long_df['NAME'].str.extract('(\d+)').astype(int)
+        long_df['date'] = long_df['date'].astype(int)  
+        long_df['name_code'] = long_df['name_code'].astype(int)
         long_df[['value', 'color']] = long_df['color_and_value'].str.split(' \| ', expand=True)
         long_df['value'] =  long_df['value'].astype(float)
-
+        # Assume long_df is your pre-loaded pandas DataFrame.
         codes, uniques = pd.factorize(long_df['color'])
-        long_df['color_code'] = codes
-
-        # Create a color mapping from the factorize operation
-        self.color_mapping = dict(enumerate(uniques))
-
-        long_df['next_color_code'] = long_df['color_code'].shift(-1)
-        long_df = long_df.dropna(axis=0)
-
+        # Add 1 to codes to start numbering from 1 instead of 0
+        long_df['color_code'] = codes + 1
+        # Create a color mapping from the factorize operation, starting with 1
+        self.color_mapping = {i + 1: uniques[i] for i in range(len(uniques))}
+        long_df['next_color_code'] = long_df.groupby('name_code')['color_code'].shift(-1)
         return long_df 
 
 
     def process_excel(self ,uploaded_file):
         df = self.preprocess_excel(uploaded_file)
         return self.process_data(df)
+    
+    def train_test_split(self, long_df):
+        if self.X_predict:
+            raise Exception("Split has already processed")
+        # Prepare the dataset for Linear Regression
+        # Updated to include 'name_as_number' as an additional feature
+        long_df = long_df.dropna(axis=0)
+        X = long_df[self.features].values # Features
+        y = long_df[self.target].values  # Target
+        self.X_predict = X[-self.row_count:]
+        # Splitting the dataset into the Training set and Test set
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        return  X_train, X_test, y_train, y_test
