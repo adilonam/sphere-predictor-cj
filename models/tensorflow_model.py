@@ -12,7 +12,7 @@ import numpy as np
 
 
 class TensoFlowModel(AbstractModel):
-    epochs = 20
+    epochs = 1
 
     def train_test_split(self, long_df):
         # Prepare the dataset for Linear Regression
@@ -65,6 +65,7 @@ class TensoFlowModel(AbstractModel):
                 y_train, 
                 epochs=self.epochs,                 # The number of epochs to train for
                 batch_size=32,             # The batch size
+                verbose = 0
             )
 
         # Model summary
