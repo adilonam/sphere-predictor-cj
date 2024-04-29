@@ -16,8 +16,8 @@ class AbstractModel:
     features = ['date', 'name_code' , 'value', 'color_code']
     target = 'next_color_code'
     X_predict = None
-    is_preferred_color = False
-    preferred_color = ["D5A6BD" ,"FF9900" ] 
+    is_preferred_color = True
+    preferred_color = ["D5A6BD" ,"FF9900" ]         
     preferred_color_code = []
 
     def preprocess_excel(self , uploaded_file):
@@ -75,6 +75,7 @@ class AbstractModel:
         if self.is_preferred_color:
             long_df['color'] = long_df['color'].map(lambda x : self.color_change(x))
 
+        long_df['value'] = pd.to_numeric(long_df['value'], errors='coerce')
         long_df['value'] =  long_df['value'].astype(float)
         # Assume long_df is your pre-loaded pandas DataFrame.
         codes, uniques = pd.factorize(long_df['color'])
@@ -112,16 +113,19 @@ class AbstractModel:
 
         # get prefered accuracy 
         preferred_correct_predictions = 0
-
+        preferred_count = 0 
         # Check each pair of true and predicted colors
+    
         for t, p in zip(true_color_code, predicted_color_code):
             # If the predicted color is not in the allowed values, count it (regardless of it being correct)
             # OR
             # If the predicted color is an allowed value and matches the true color, count it
-            if p not in self.preferred_color_code or (p in self.preferred_color_code and t == p):
+            if  (p in self.preferred_color_code and t == p):
                 preferred_correct_predictions += 1
-
-        self.preferred_accuracy = (preferred_correct_predictions / total_predictions)
+            if t in self.preferred_color_code:
+                preferred_count += 1
+            
+        self.preferred_accuracy = (preferred_correct_predictions / preferred_count)
 
     
     
@@ -165,13 +169,7 @@ class AbstractModel:
         X = long_df[self.features].values # Features
         y = long_df[self.target].values  # Target
 
-        # Convert labels to one-hot encoding
-        self.encoder = OneHotEncoder()
-        y = self.encoder.fit_transform(y.reshape(-1, 1)).toarray()
-
-        self.X_predict = X[-self.row_count:]
-        # Splitting the dataset into the Training set and Test set
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        return  X_train, X_test, y_train, y_test
+        
+        return  X, y
     
     

@@ -11,8 +11,12 @@ import numpy as np
 
 
 
-class TensoFlowModel(AbstractModel):
-    epochs = 20
+class TensorFlowModel(AbstractModel):
+    epochs = 10
+
+ 
+    
+
 
     def reshape_input(self , X):
         return X.reshape((X.shape[0], X.shape[1], 1))
@@ -20,12 +24,16 @@ class TensoFlowModel(AbstractModel):
 
 
     
-    def fit(self ,  X_train, X_test, y_train, y_test):
+    def fit(self ,  X, y):
         # Splitting the dataset into the Training set and Test set
-        X_train = self.reshape_input(X_train)
-        X_test = self.reshape_input(X_test)
-        self.X_predict = self.reshape_input(self.X_predict)
-    
+        X = self.reshape_input(X)
+        self.X_predict = X[-self.row_count:]
+        # Convert labels to one-hot encoding
+        self.encoder = OneHotEncoder()
+        y = self.encoder.fit_transform(y.reshape(-1, 1)).toarray()
+        
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         # Assuming x_train is already reshaped appropriately for LSTM layers and y_train is one-hot encoded
         num_classes = y_train.shape[1]  # Assuming y_train is one-hot encoded with shape (num_samples, num_classes)
         X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))

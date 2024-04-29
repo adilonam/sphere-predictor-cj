@@ -4,29 +4,41 @@ import streamlit as st
 import pandas as pd
 
 from models.linear_regression import LinReg
-from models.tensorflow_model import TensoFlowModel
+from models.tensorflow_model import TensorFlowModel
 
 # Streamlit app code
 st.title('Predict Sphere')
 
-# Dropdown to select the model type
-model_type = st.selectbox("Choose the model you want to use:",
-                          ('Linear Regression', 'AI Model'))
 
-# Initialize session state for the selected model if it's not already set
-if 'model_type' not in st.session_state or st.session_state.model_type != model_type:
-    st.session_state.model_type = model_type
-    if model_type == 'Linear Regression':
-        st.session_state.model = LinReg()
-        st.session_state.model_trained = False
-    elif model_type == 'AI Model':
-        st.session_state.model = TensoFlowModel()
-        st.session_state.model_trained = False
+
+
+
 
 
 
 if 'model_trained' not in st.session_state:
     st.session_state.model_trained = False
+
+# Dropdown to select the model type
+model_type = st.selectbox("Choose the model you want to use:",
+                          ('Linear Regression', 'AI Model'))
+
+# Only clear session and reset if the model_type has changed from the last run
+if 'old_model_type' not in st.session_state or st.session_state.old_model_type != model_type:
+    st.session_state.clear()  # Clear the session state to reset everything
+    st.session_state['old_model_type'] = model_type  # Store the new model_type
+    # Reinitialize session state values
+    if model_type == 'Linear Regression':
+        st.session_state['model'] = LinReg()  # Replace with your actual Linear Regression class or function
+        st.session_state['model_trained'] = False
+    elif model_type == 'AI Model':
+        st.session_state['model'] = TensorFlowModel()  # Replace with your actual AI model class or function
+        st.session_state['model_trained'] = False
+
+
+
+
+
 
 
 
