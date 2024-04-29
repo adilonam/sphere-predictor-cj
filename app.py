@@ -18,8 +18,10 @@ if 'model_type' not in st.session_state or st.session_state.model_type != model_
     st.session_state.model_type = model_type
     if model_type == 'Linear Regression':
         st.session_state.model = LinReg()
+        st.session_state.model_trained = False
     elif model_type == 'AI Model':
         st.session_state.model = TensoFlowModel()
+        st.session_state.model_trained = False
 
 
 
@@ -80,7 +82,8 @@ if uploaded_file:
         color_count = len(st.session_state.model.color_mapping)
         st.warning(f'The dataset contains {color_count} colors, which implies a theoretical baseline accuracy of {1/color_count * 100:.2f}%.')
         st.write(f'Mean Squared Error: {st.session_state.model.mse:.2f}')
-        st.write(f'Accuracy Percentage: {st.session_state.model.accuracy_percentage * 100:.2f}%')
+        st.write(f'Accuracy Percentage for {color_count} colors : {st.session_state.model.accuracy * 100:.2f}%')
+        st.write(f'Accuracy Percentage for {3} colors : {st.session_state.model.preferred_accuracy * 100:.2f}%')
 
 
     # Display the DataFrame with `next_color` column colored accordingly
