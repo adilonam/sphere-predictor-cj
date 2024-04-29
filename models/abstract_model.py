@@ -7,7 +7,6 @@ import json
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import mean_squared_error  
-from sklearn.model_selection import train_test_split
 import numpy as np 
 
 class AbstractModel:
@@ -15,9 +14,9 @@ class AbstractModel:
     color_mapping = {}
     features = ['date', 'name_code' , 'value', 'color_code']
     target = 'next_color_code'
-    X_predict = None
+    last_long_df = None
     is_preferred_color = True
-    preferred_color = ["D5A6BD" ,"FF9900" ]         
+    preferred_color = ["D5A6BD" ,"FFC000" , '9BC2E6' ]       # FFC000 orange        D5A6BD purple   9BC2E6 blue
     preferred_color_code = []
 
     def preprocess_excel(self , uploaded_file):
@@ -54,28 +53,24 @@ class AbstractModel:
 
     def color_change(self , x):
         if x in self.preferred_color:
-            return x 
+            return '000000'
         else:
             return "FFFFFF"
 
     def process_data(self ,df):
         if self.color_mapping:
             raise Exception("data process has already processed")
-        long_df = df
-        first_col_header = long_df.columns[0]
-        long_df.columns = [first_col_header] + [i for i in range(1, len(long_df.columns))]
-        long_df['name_code'] = long_df.index 
+        first_col_header = df.columns[0]
+        df.columns = [first_col_header] + [i for i in range(1, len(df.columns))]
         # Processing the DataFrame 'data' to have "date", "name", "color_value" columns
-        long_df = pd.melt(df, id_vars=['NAME' , 'name_code'], var_name='date', value_name='color_and_value')
+        long_df = pd.melt(df, id_vars=['NAME'], var_name='date', value_name='color_and_value')
         # Convert dates and name to a numerical value, 
-        long_df['date'] = long_df['date'].astype(int)  
-        long_df['name_code'] = long_df['name_code'].astype(int)
+        long_df['date'] = long_df['date'].astype(int) 
+        long_df['name_code'] = long_df['NAME'].str.extract(r'(\d+)').astype(int)
         long_df[['value', 'color']] = long_df['color_and_value'].str.split(' \| ', expand=True)
         # check working with three color
         if self.is_preferred_color:
             long_df['color'] = long_df['color'].map(lambda x : self.color_change(x))
-
-        long_df['value'] = pd.to_numeric(long_df['value'], errors='coerce')
         long_df['value'] =  long_df['value'].astype(float)
         # Assume long_df is your pre-loaded pandas DataFrame.
         codes, uniques = pd.factorize(long_df['color'])
@@ -83,9 +78,10 @@ class AbstractModel:
         long_df['color_code'] = codes 
         # Create a color mapping from the factorize operation, starting with 1
         for i in range(len(uniques)):
-            self.color_mapping [i]  = uniques[i] 
-            if uniques[i] in self.preferred_color:
+            self.color_mapping [i]  = uniques[i]       
+            if uniques[i]   == "000000":
                 self.preferred_color_code.append(i)
+
         long_df['next_color_code'] = long_df.groupby('name_code')['color_code'].shift(-1)
 
         return long_df 
@@ -98,25 +94,23 @@ class AbstractModel:
 
     def set_metrics(self, predictions , y_test):
        
-        predicted_color_code =  self.decode(predictions)
-        true_color_code = self.decode(y_test)
+        self.mse = mean_squared_error(y_test, predictions)
 
-        self.mse = mean_squared_error(true_color_code, predicted_color_code)
-
-        self.mse = mean_squared_error(true_color_code, predicted_color_code)
+        self.mse = mean_squared_error(y_test, predictions)
         # Calculate the number of correct predictions
-        correct_predictions = sum(true_color_code == predicted_color_code)
+        correct_predictions = sum(y_test == predictions)
         # Calculate the total number of predictions
-        total_predictions = len(predicted_color_code)
+        total_predictions = len(predictions)
         # Calculate the percentage of correct predictions
         self.accuracy = (correct_predictions / total_predictions)
 
         # get prefered accuracy 
         preferred_correct_predictions = 0
         preferred_count = 0 
+        predictions_preferred_count = 0
         # Check each pair of true and predicted colors
-    
-        for t, p in zip(true_color_code, predicted_color_code):
+        print( self.preferred_color_code)
+        for t, p in zip(y_test, predictions):
             # If the predicted color is not in the allowed values, count it (regardless of it being correct)
             # OR
             # If the predicted color is an allowed value and matches the true color, count it
@@ -124,23 +118,14 @@ class AbstractModel:
                 preferred_correct_predictions += 1
             if t in self.preferred_color_code:
                 preferred_count += 1
-            
-        self.preferred_accuracy = (preferred_correct_predictions / preferred_count)
+            if p in  self.preferred_color_code:
+                predictions_preferred_count += 1
+        
+        self.preferred_accuracy = (preferred_correct_predictions / predictions_preferred_count) if predictions_preferred_count != 0 else 0
 
     
     
-    def decode(self , predictions):
-        predicted_labels = predictions.argmax(axis=1)
-        one_hot_predictions = np.zeros((predicted_labels.shape[0], len(self.encoder.categories_[0])))
-
-        # Set the predicted labels to 1
-        for i, label in enumerate(predicted_labels):
-            one_hot_predictions[i, label] = 1
-
-        # Step 2: Use the encoder to inverse transform the one-hot encoded predictions
-        y_test_pred = self.encoder.inverse_transform(one_hot_predictions)
-        y_test_pred = y_test_pred.reshape(y_test_pred.shape[0]).astype(int)
-        return y_test_pred
+    
     
     def color_mapper(self , x):
         if x in self.color_mapping:
@@ -149,14 +134,12 @@ class AbstractModel:
             last_key = sorted(self.color_mapping.keys())[-1]
             return self.color_mapping[last_key]
 
-    def predict(self):
-        if  self.X_predict is None:
+    def predict_last(self):
+        if  self.last_long_df is None:
             raise Exception('Must be trained')
-        predictions = self.model.predict(self.X_predict)
-        predicted_colors =  self.decode(predictions)
-
+        predictions = self.predict(self.last_long_df)
         predicted_df = self.last_df
-        predicted_df['next_color_code'] =  predicted_colors
+        predicted_df['next_color_code'] =  predictions
         predicted_df['next_color_code'] = predicted_df['next_color_code'].round().astype(int)
         predicted_df['next_color'] = predicted_df['next_color_code'].map( lambda x: self.color_mapper(x) )
         return predicted_df
@@ -165,11 +148,14 @@ class AbstractModel:
     def train_test_split(self, long_df):
         # Prepare the dataset for Linear Regression
         # Updated to include 'name_as_number' as an additional feature
+        self.last_long_df = long_df[-self.row_count:]
         long_df = long_df.dropna(axis=0)
         X = long_df[self.features].values # Features
         y = long_df[self.target].values  # Target
 
         
         return  X, y
+    def predict(self , X):
+        raise Exception('Not emplemented')
     
     

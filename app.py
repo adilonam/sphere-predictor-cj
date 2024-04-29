@@ -3,8 +3,9 @@ import io
 import streamlit as st
 import pandas as pd
 
-from models.linear_regression import LinReg
-from models.tensorflow_model import TensorFlowModel
+# from models.linear_regression import LinReg
+# from models.tensorflow_model import TensorFlowModel
+from models.random_forest import RandomForest
 
 # Streamlit app code
 st.title('Predict Sphere')
@@ -19,26 +20,10 @@ st.title('Predict Sphere')
 if 'model_trained' not in st.session_state:
     st.session_state.model_trained = False
 
-# Dropdown to select the model type
-model_type = st.selectbox("Choose the model you want to use:",
-                          ('Linear Regression', 'AI Model'))
-
-# Only clear session and reset if the model_type has changed from the last run
-if 'old_model_type' not in st.session_state or st.session_state.old_model_type != model_type:
-    st.session_state.clear()  # Clear the session state to reset everything
-    st.session_state['old_model_type'] = model_type  # Store the new model_type
-    # Reinitialize session state values
-    if model_type == 'Linear Regression':
-        st.session_state['model'] = LinReg()  # Replace with your actual Linear Regression class or function
-        st.session_state['model_trained'] = False
-    elif model_type == 'AI Model':
-        st.session_state['model'] = TensorFlowModel()  # Replace with your actual AI model class or function
-        st.session_state['model_trained'] = False
 
 
-
-
-
+if 'model' not in st.session_state:
+    st.session_state.model = RandomForest()
 
 
 
@@ -71,11 +56,11 @@ if uploaded_file:
         
         progress_bar.progress(30)
         progress_text.text("Splitting data for training and testing...")
-        X_train, X_test, y_train, y_test = st.session_state.model.train_test_split(long_df)
+        X, y  = st.session_state.model.train_test_split(long_df)
 
         progress_bar.progress(50)
         progress_text.text("Training the model...")
-        model_trained = st.session_state.model.fit(X_train, X_test, y_train, y_test)
+        model_trained = st.session_state.model.fit(X, y)
         
         if model_trained:
             st.session_state.model_trained = True
@@ -92,15 +77,14 @@ if uploaded_file:
     if st.session_state.model_trained:
         st.success('The model has been successfully trained!')
         color_count = len(st.session_state.model.color_mapping)
-        st.warning(f'The dataset contains {color_count} colors, which implies a theoretical baseline accuracy of {1/color_count * 100:.2f}%.')
         st.write(f'Mean Squared Error: {st.session_state.model.mse:.2f}')
-        st.write(f'Accuracy Percentage for {color_count} colors : {st.session_state.model.accuracy * 100:.2f}%')
-        st.write(f'Accuracy Percentage for {3} colors : {st.session_state.model.preferred_accuracy * 100:.2f}%')
+        st.write(f'Accuracy Percentage : {st.session_state.model.accuracy * 100:.2f}%')
+        st.write(f'Accuracy to have a correct color from purple orange blue: {st.session_state.model.preferred_accuracy * 100:.2f}%')
 
 
     # Display the DataFrame with `next_color` column colored accordingly
     if st.button('Show Predictions'):
-        predicted_df = st.session_state.model.predict()
+        predicted_df = st.session_state.model.predict_last()
         if not predicted_df.empty:
             st.write("Predicted DataFrame with next_color codes:")
             # Apply the coloring function to the 'next_color' column
