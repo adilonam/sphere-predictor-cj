@@ -24,6 +24,7 @@ if 'model_trained' not in st.session_state:
 
 if 'model' not in st.session_state:
     st.session_state.model = RandomForest()
+    st.session_state.model.color_mapping = {}
 
 
 
@@ -33,6 +34,9 @@ uploaded_file = st.file_uploader("Upload your Excel file (.xlsx)", type=['xlsx']
 def colorize(val):
     color = f'background-color: #{val}' if pd.notnull(val) else ''
     return color
+
+
+
 
 
 if uploaded_file:
