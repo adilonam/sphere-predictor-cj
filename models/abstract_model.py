@@ -16,7 +16,7 @@ class AbstractModel:
     features = ["date_code" ,'name_code' ,"color_code" , 'value' ]
     target = 'next_color_binary'
     last_long_df = None
-    preferred_color = ['D5A6BD' , 'FFC000'  , '9BC2E6' ,  '8EA9DB'  ]      
+    preferred_color = ['D5A6BD' , 'FFC000'  ]      
     # ['A9D08E' green , '9BC2E6' blue , 'FFC000' orange, 'FFFF00' yellow, 'D5A6BD' purple, 'FF0000' red, '8EA9DB' blue]
     last_df = None
 
