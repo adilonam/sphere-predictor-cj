@@ -16,7 +16,7 @@ class AbstractModel:
     features = ["date_code" ,'name_code' ,"color_code" , 'value' ]
     target = 'next_color_binary'
     last_long_df = None
-    preferred_color = ['D5A6BD' , 'FFC000' ,  '8EA9DB' , '9BC2E6' ]      
+    preferred_color = ['D5A6BD' , 'FFC000'  , '9BC2E6' ,  '8EA9DB'  ]      
     # ['A9D08E' green , '9BC2E6' blue , 'FFC000' orange, 'FFFF00' yellow, 'D5A6BD' purple, 'FF0000' red, '8EA9DB' blue]
     last_df = None
 
@@ -63,8 +63,10 @@ class AbstractModel:
             raise Exception("data process has already processed")
         # Processing the DataFrame 'data' to have "date", "name", "color_value" columns
         long_df = pd.melt(df, id_vars=['NAME'], var_name='date', value_name='color_and_value')
-        # Convert dates and name to a numerical value, 
 
+        # Convert dates and name to a numerical value, 
+        long_df['name_code'] = long_df['NAME'].str.extract(r'(\d+)').astype(int)
+        # long_df = long_df[long_df['name_code'] ==  101]
         long_df['date'] = pd.to_datetime(long_df['date'])
         codes, uniques = pd.factorize(long_df['date'])
         long_df['date_code'] = codes
@@ -72,7 +74,7 @@ class AbstractModel:
         long_df['day_of_year'] = long_df['date'].dt.dayofyear.astype(int)
 
         long_df['date'] = long_df['date'].astype(int) 
-        long_df['name_code'] = long_df['NAME'].str.extract(r'(\d+)').astype(int)
+        
         long_df[['value', 'color']] = long_df['color_and_value'].str.split(' \| ', expand=True)
         long_df['value'] =  long_df['value'].astype(float)
 
