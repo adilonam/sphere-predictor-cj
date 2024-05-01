@@ -8,16 +8,16 @@ import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import mean_squared_error  
 import numpy as np 
+from sklearn.metrics import accuracy_score
 
 class AbstractModel:
     
     color_mapping = {}
-    features = ['date', 'name_code' , 'value', 'color_code']
-    target = 'next_color_code'
+    features = ["date_code" ,'name_code' , "color_code" , 'value'  ]
+    target = 'next_color_binary'
     last_long_df = None
-    is_preferred_color = True
-    preferred_color = ["D5A6BD" ,"FFC000" , '9BC2E6' ]       # FFC000 orange        D5A6BD purple   9BC2E6 blue
-    preferred_color_code = []
+    preferred_color = ["D5A6BD" ,"FFC000" ]       # FFC000 orange        D5A6BD purple   9BC2E6    blue  FFFF00 yellow
+    last_df = None
 
     def preprocess_excel(self , uploaded_file):
         # Load the workbook
@@ -53,37 +53,38 @@ class AbstractModel:
 
     def color_change(self , x):
         if x in self.preferred_color:
-            return '000000'
+            return 1
         else:
-            return "FFFFFF"
+            return 0
 
     def process_data(self ,df):
         if self.color_mapping:
             raise Exception("data process has already processed")
-        first_col_header = df.columns[0]
-        df.columns = [first_col_header] + [i for i in range(1, len(df.columns))]
         # Processing the DataFrame 'data' to have "date", "name", "color_value" columns
         long_df = pd.melt(df, id_vars=['NAME'], var_name='date', value_name='color_and_value')
         # Convert dates and name to a numerical value, 
+
+        long_df['date'] = pd.to_datetime(long_df['date'])
+        codes, uniques = pd.factorize(long_df['date'])
+        long_df['date_code'] = codes
+
+        long_df['day_of_year'] = long_df['date'].dt.dayofyear.astype(int)
+
         long_df['date'] = long_df['date'].astype(int) 
         long_df['name_code'] = long_df['NAME'].str.extract(r'(\d+)').astype(int)
         long_df[['value', 'color']] = long_df['color_and_value'].str.split(' \| ', expand=True)
-        # check working with three color
-        if self.is_preferred_color:
-            long_df['color'] = long_df['color'].map(lambda x : self.color_change(x))
         long_df['value'] =  long_df['value'].astype(float)
-        # Assume long_df is your pre-loaded pandas DataFrame.
+
         codes, uniques = pd.factorize(long_df['color'])
+        
         # Add 1 to codes to start numbering from 1 instead of 0
         long_df['color_code'] = codes 
-        # Create a color mapping from the factorize operation, starting with 1
-        for i in range(len(uniques)):
-            self.color_mapping [i]  = uniques[i]       
-            if uniques[i]   == "000000":
-                self.preferred_color_code.append(i)
+       
+        long_df['color_binary'] = long_df['color'].map(lambda x : self.color_change(x)).astype(int)
+        
+        long_df['next_color_binary'] = long_df.groupby('name_code')['color_binary'].shift(-1)
 
         long_df['next_color_code'] = long_df.groupby('name_code')['color_code'].shift(-1)
-
         return long_df 
 
 
@@ -95,35 +96,22 @@ class AbstractModel:
     def set_metrics(self, predictions , y_test):
        
         self.mse = mean_squared_error(y_test, predictions)
+        self.accuracy  = accuracy_score(y_test, predictions)
 
-        self.mse = mean_squared_error(y_test, predictions)
-        # Calculate the number of correct predictions
-        correct_predictions = sum(y_test == predictions)
-        # Calculate the total number of predictions
-        total_predictions = len(predictions)
-        # Calculate the percentage of correct predictions
-        self.accuracy = (correct_predictions / total_predictions)
-
-        # get prefered accuracy 
-        preferred_correct_predictions = 0
-        preferred_count = 0 
-        predictions_preferred_count = 0
-        # Check each pair of true and predicted colors
-        print( self.preferred_color_code)
+        correct = 0
+        predictions_count = 0
         for t, p in zip(y_test, predictions):
             # If the predicted color is not in the allowed values, count it (regardless of it being correct)
             # OR
             # If the predicted color is an allowed value and matches the true color, count it
-            if  (p in self.preferred_color_code and t == p):
-                preferred_correct_predictions += 1
-            if t in self.preferred_color_code:
-                preferred_count += 1
-            if p in  self.preferred_color_code:
-                predictions_preferred_count += 1
-        
-        self.preferred_accuracy = (preferred_correct_predictions / predictions_preferred_count) if predictions_preferred_count != 0 else 0
+            if  t == p and t == 1:
+                correct += 1
+            if p  == 1:
+                predictions_count += 1
+        self.preferred_accuracy = correct / predictions_count if  predictions_count != 0 else 0 
 
-    
+
+       
     
     
     
@@ -139,9 +127,8 @@ class AbstractModel:
             raise Exception('Must be trained')
         predictions = self.predict(self.last_long_df)
         predicted_df = self.last_df
+        predicted_df['color_and_value'] =  self.last_long_df['color_and_value'].values
         predicted_df['next_color_code'] =  predictions
-        predicted_df['next_color_code'] = predicted_df['next_color_code'].round().astype(int)
-        predicted_df['next_color'] = predicted_df['next_color_code'].map( lambda x: self.color_mapper(x) )
         return predicted_df
     
 
