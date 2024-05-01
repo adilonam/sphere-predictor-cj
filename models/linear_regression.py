@@ -19,7 +19,8 @@ class LinReg(AbstractModel):
         self.model.fit(X_train, y_train)
         # get accuracy
         predicted_colors = self.model.predict(X_test)
-        predicted_colors = [round(x) for x in predicted_colors]
+        print(predicted_colors)
+        # predicted_colors = [round(x) for x in predicted_colors]
         self.set_metrics(predicted_colors , y_test )
         return True
     

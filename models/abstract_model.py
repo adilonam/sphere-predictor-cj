@@ -16,7 +16,7 @@ class AbstractModel:
     features = ["date_code" ,'name_code' ,"color_code" , 'value' ]
     target = 'next_color_binary'
     last_long_df = None
-    preferred_color = ['D5A6BD' , 'FFC000'  ]      
+    preferred_color = ['D5A6BD' , 'FFC000' ]      
     # ['A9D08E' green , '9BC2E6' blue , 'FFC000' orange, 'FFFF00' yellow, 'D5A6BD' purple, 'FF0000' red, '8EA9DB' blue]
     last_df = None
 
@@ -68,6 +68,13 @@ class AbstractModel:
         long_df['name_code'] = long_df['NAME'].str.extract(r'(\d+)').astype(int)
         # long_df = long_df[long_df['name_code'] ==  101]
         long_df['date'] = pd.to_datetime(long_df['date'])
+        # Get day of the month
+        long_df['day_of_month'] = long_df['date'].dt.day
+
+        # Get day of the week (Monday=0, Sunday=6)
+        long_df['day_of_week'] = long_df['date'].dt.dayofweek
+
+
         codes, uniques = pd.factorize(long_df['date'])
         long_df['date_code'] = codes
 

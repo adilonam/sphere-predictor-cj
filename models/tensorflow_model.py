@@ -13,7 +13,8 @@ import numpy as np
 
 
 class TensorFlowModel(AbstractModel):
-    epochs = 4
+    epochs = 20
+    prob = 0.31
 
     def __init__(self) -> None:
         self.encoder = OneHotEncoder()
@@ -35,8 +36,9 @@ class TensorFlowModel(AbstractModel):
         # No need for one-hot encoding in binary classification:
         # Remove the encoder fitting line
 
-        self.scaler = MinMaxScaler()
+        self.scaler = StandardScaler()
         X = self.scaler.fit_transform(X)
+        
         
         X = self.reshape_input(X)
         # Split the data
@@ -76,8 +78,8 @@ class TensorFlowModel(AbstractModel):
 
         predictions = self.model.predict(X_test)
 
-
-        self.set_metrics((predictions > 0.5).astype("int32") , y_test)
+        print(predictions.mean())
+        self.set_metrics((predictions > self.prob).astype("int32") , y_test)
         return True
 
 
@@ -89,7 +91,7 @@ class TensorFlowModel(AbstractModel):
         X = self.reshape_input(X)
         
         predictions = self.model.predict(X)
-        return (predictions > 0.5).astype("int32")
+        return predictions
     
 
 

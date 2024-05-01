@@ -5,7 +5,7 @@ import pandas as pd
 
 # from models.linear_regression import LinReg
 # from models.tensorflow_model import TensorFlowModel
-from models.random_forest import RandomForest
+from models.tensorflow_model import TensorFlowModel
 
 # Streamlit app code
 st.title('Predict Sphere')
@@ -23,7 +23,7 @@ if 'model_trained' not in st.session_state:
 
 
 if 'model' not in st.session_state:
-    st.session_state.model = RandomForest()
+    st.session_state.model = TensorFlowModel()
     st.session_state.model.color_mapping = {}
 
 
@@ -32,8 +32,11 @@ if 'model' not in st.session_state:
 uploaded_file = st.file_uploader("Upload your Excel file (.xlsx)", type=['xlsx'])
     # Function to apply a background color to cells in a DataFrame
 def colorize(val):
-    color = '008000'  if val == 1 else 'FF0000'
-    style = f'background-color: #{color}' 
+    # Assuming 'val' is between 0 and 1 for the purpose of creating a gradient 
+    # If your values have a different range, you need to normalize them first
+    green_value = int(val * 255)
+    color = f'{green_value:02X}8000'  # Adjusted green channel based on 'val' proximity to 0
+    style = f'background-color: #{color}'
     return style
 
 
@@ -84,7 +87,6 @@ if uploaded_file:
         color_count = len(st.session_state.model.color_mapping)
         st.write(f'Mean Squared Error: {st.session_state.model.mse:.2f}')
         st.write(f'Accuracy Percentage : {st.session_state.model.accuracy * 100:.2f}%')
-        st.write(f'Accuracy to have a correct color from purple orange blue: {st.session_state.model.preferred_accuracy * 100:.2f}%')
 
 
     # Display the DataFrame with `next_color` column colored accordingly
@@ -93,6 +95,7 @@ if uploaded_file:
         if not predicted_df.empty:
             st.write("Predicted DataFrame with next_color codes:")
             # Apply the coloring function to the 'next_color' column
+            predicted_df = predicted_df.sort_values(by='next_color_code', ascending=False)
             st.dataframe(predicted_df.style.map(colorize, subset=['next_color_code']))
         else:
             st.error('No predictions to display. Ensure model is trained and data is available.')
