@@ -13,10 +13,11 @@ from sklearn.metrics import accuracy_score
 class AbstractModel:
     
     color_mapping = {}
-    features = ["date_code" ,'name_code' , "color_code" , 'value'  ]
+    features = ["date_code" ,'name_code' ,"color_code" , 'value' ]
     target = 'next_color_binary'
     last_long_df = None
-    preferred_color = ["D5A6BD" ,"FFC000" ]       # FFC000 orange        D5A6BD purple   9BC2E6    blue  FFFF00 yellow
+    preferred_color = ['D5A6BD' , 'FFC000' ,  '8EA9DB' , '9BC2E6' ]      
+    # ['A9D08E' green , '9BC2E6' blue , 'FFC000' orange, 'FFFF00' yellow, 'D5A6BD' purple, 'FF0000' red, '8EA9DB' blue]
     last_df = None
 
     def preprocess_excel(self , uploaded_file):
@@ -79,12 +80,16 @@ class AbstractModel:
         
         # Add 1 to codes to start numbering from 1 instead of 0
         long_df['color_code'] = codes 
+        long_df['next_color_code'] = long_df.groupby('name_code')['color_code'].shift(-1)
+        long_df['previous_color_code'] = long_df.groupby('name_code')['color_code'].shift(1)
        
         long_df['color_binary'] = long_df['color'].map(lambda x : self.color_change(x)).astype(int)
         
         long_df['next_color_binary'] = long_df.groupby('name_code')['color_binary'].shift(-1)
 
-        long_df['next_color_code'] = long_df.groupby('name_code')['color_code'].shift(-1)
+        
+        
+
         return long_df 
 
 
@@ -97,9 +102,9 @@ class AbstractModel:
        
         self.mse = mean_squared_error(y_test, predictions)
         self.accuracy  = accuracy_score(y_test, predictions)
-
         correct = 0
-        predictions_count = 0
+        self.predictions_count = 0
+        self.y_test_count = 0
         for t, p in zip(y_test, predictions):
             # If the predicted color is not in the allowed values, count it (regardless of it being correct)
             # OR
@@ -107,8 +112,11 @@ class AbstractModel:
             if  t == p and t == 1:
                 correct += 1
             if p  == 1:
-                predictions_count += 1
-        self.preferred_accuracy = correct / predictions_count if  predictions_count != 0 else 0 
+                self.predictions_count += 1
+            if t == 1:
+                self.y_test_count +=1 
+
+        self.preferred_accuracy = correct / self.predictions_count if  self.predictions_count != 0 else 0 
 
 
        

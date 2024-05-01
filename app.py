@@ -32,8 +32,9 @@ if 'model' not in st.session_state:
 uploaded_file = st.file_uploader("Upload your Excel file (.xlsx)", type=['xlsx'])
     # Function to apply a background color to cells in a DataFrame
 def colorize(val):
-    color = f'background-color: #{val}' if pd.notnull(val) else ''
-    return color
+    color = '008000'  if val == 1 else 'FF0000'
+    style = f'background-color: #{color}' 
+    return style
 
 
 
@@ -92,7 +93,7 @@ if uploaded_file:
         if not predicted_df.empty:
             st.write("Predicted DataFrame with next_color codes:")
             # Apply the coloring function to the 'next_color' column
-            st.dataframe(predicted_df.style.map(colorize, subset=['next_color']))
+            st.dataframe(predicted_df.style.map(colorize, subset=['next_color_code']))
         else:
             st.error('No predictions to display. Ensure model is trained and data is available.')
 

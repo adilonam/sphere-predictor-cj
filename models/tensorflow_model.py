@@ -2,7 +2,7 @@ import json
 import pandas as pd
 from sklearn.discriminant_analysis import StandardScaler
 from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from .abstract_model import AbstractModel
 from sklearn.metrics import mean_squared_error  
 from tensorflow.keras.models import Sequential
@@ -13,7 +13,7 @@ import numpy as np
 
 
 class TensorFlowModel(AbstractModel):
-    epochs = 3
+    epochs = 4
 
     def __init__(self) -> None:
         self.encoder = OneHotEncoder()
@@ -35,34 +35,34 @@ class TensorFlowModel(AbstractModel):
         # No need for one-hot encoding in binary classification:
         # Remove the encoder fitting line
 
-        self.scaler = StandardScaler()
+        self.scaler = MinMaxScaler()
         X = self.scaler.fit_transform(X)
         
         X = self.reshape_input(X)
         # Split the data
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         # No need to reshape X_train since we are assuming
         # it has already been reshaped for LSTM layers appropriately
 
         # Build the model
-        self.model = Sequential()
-        self.model.add(LSTM(128, return_sequences=True, input_shape=(X.shape[1], X.shape[2])))
-        self.model.add(BatchNormalization())
-        self.model.add(Dropout(0.5))
-
-        self.model.add(LSTM(64, return_sequences=False))
-        self.model.add(BatchNormalization())
-        self.model.add(Dropout(0.5))
-
-        self.model.add(Dense(64, activation='relu'))
-        self.model.add(BatchNormalization())
-        self.model.add(Dropout(0.5))
-
-        # Output layer for binary classification
-        self.model.add(Dense(1, activation='sigmoid'))
-
-        # Compile the model with binary crossentropy loss function and an optimizer
+        self.model = Sequential([
+                    LSTM(64, input_shape=(X.shape[1], X.shape[2]), return_sequences=True),
+                    BatchNormalization(),
+                    Dropout(0.5),
+                    LSTM(32, return_sequences=False),
+                    BatchNormalization(),
+                    Dropout(0.5),
+                    Dense(64, activation='relu'),
+                    BatchNormalization(),
+                    Dropout(0.5),
+                    Dense(32, activation='relu'),
+                    BatchNormalization(),
+                    Dropout(0.5),
+                    Dense(1, activation='sigmoid')
+                ])
+                        
+        # Compile the model
         self.model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
         # Train the model
