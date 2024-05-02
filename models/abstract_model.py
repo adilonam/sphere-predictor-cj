@@ -13,41 +13,39 @@ from sklearn.metrics import accuracy_score
 class AbstractModel:
     
     color_mapping = {}
-    features = ["date_code" ,'name_code' ,"color_code" , 'value' ]
+    features = ["date_code"  ,'name_code' , 'day_of_year', 'day_of_month', 'day_of_week' ,"color_code" , 'value'  ] #  'day_of_year', 'day_of_month', 'day_of_week'
     target = 'next_color_binary'
     last_long_df = None
-    preferred_color = ['D5A6BD' , 'FFC000' ]      
-    # ['A9D08E' green , '9BC2E6' blue , 'FFC000' orange, 'FFFF00' yellow, 'D5A6BD' purple, 'FF0000' red, '8EA9DB' blue]
+    preferred_color = ['D5A6BD' , 'FFC000'  , '9BC2E6', '8EA9DB' ]      
+    # ['A9D08E' green , '9BC2E6' blue , 'FFC000' orange, 'FFFF00' yellow  0.42, 'D5A6BD' purple, 'FF0000' red, '8EA9DB' blue]
     last_df = None
+    is_sheet2 = True
 
-    def preprocess_excel(self , uploaded_file):
+    def preprocess_excel(self, uploaded_file):
         # Load the workbook
         wb = openpyxl.load_workbook(filename=uploaded_file)
-        ws = wb.active
-
-        # Iterate through the cells, skipping the first row and the first column
-        for row in ws.iter_rows(min_row=2, min_col=2):
+        
+        # Process Sheet1
+        ws_sheet1 = wb['Sheet1']
+        for row in ws_sheet1.iter_rows(min_row=2, min_col=2):
             for cell in row:
-                # Check for background color's hex code
                 color_hex = cell.fill.start_color.index[2:] if cell.fill.start_color.index else 'None'
-
-                # Combine the value with the color hex code within the same cell
                 cell.value = f"{cell.value} | {color_hex}"
-
-        # Save the updated workbook to a temporary file and return it
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
+        
+        # Create a DataFrame from Sheet1 with updates
+        with tempfile.NamedTemporaryFile() as tmp:
             wb.save(tmp.name)
             tmp.seek(0)
-            df = pd.read_excel(io.BytesIO(tmp.read()))
-            # Get the first and last columns as Series
-            first_column = df.iloc[:, 0]
-            last_column = df.iloc[:, -1]
+            df_sheet1 = pd.read_excel(tmp, engine='openpyxl', sheet_name='Sheet1')
+        
+        # Create a DataFrame from Sheet2 without changes
+        if self.is_sheet2:
+            df_sheet2 = pd.read_excel(uploaded_file, engine='openpyxl', sheet_name='Sheet2')
+            assert (df_sheet1.shape == df_sheet2.shape), "Shape in df_sheet1 and df_sheet2 do not match."
+            for i in range(1, df_sheet1.shape[1]):
+                df_sheet1.iloc[:, i] = df_sheet1.iloc[:, i].astype(str) + ' | ' + df_sheet2.iloc[:, i].astype(str)
 
-            # Concatenate the Series into a new DataFrame
-            self.last_df = pd.concat([first_column, last_column], axis=1)
-            self.row_count =  df.shape[0]
-            
-            return df
+        return df_sheet1
         
 
 
@@ -61,12 +59,21 @@ class AbstractModel:
     def process_data(self ,df):
         if self.color_mapping:
             raise Exception("data process has already processed")
+        
+        # Get the first and last columns as Series
+        first_column = df.iloc[:, 0]
+        last_column = df.iloc[:, -1]
+
+        # Concatenate the Series into a new DataFrame
+        self.last_df = pd.concat([first_column, last_column], axis=1)
+        self.row_count =  df.shape[0]
+
         # Processing the DataFrame 'data' to have "date", "name", "color_value" columns
         long_df = pd.melt(df, id_vars=['NAME'], var_name='date', value_name='color_and_value')
 
         # Convert dates and name to a numerical value, 
         long_df['name_code'] = long_df['NAME'].str.extract(r'(\d+)').astype(int)
-        # long_df = long_df[long_df['name_code'] ==  101]
+
         long_df['date'] = pd.to_datetime(long_df['date'])
         # Get day of the month
         long_df['day_of_month'] = long_df['date'].dt.day
@@ -81,9 +88,15 @@ class AbstractModel:
         long_df['day_of_year'] = long_df['date'].dt.dayofyear.astype(int)
 
         long_df['date'] = long_df['date'].astype(int) 
-        
-        long_df[['value', 'color']] = long_df['color_and_value'].str.split(' \| ', expand=True)
+
+        if self.is_sheet2:
+            long_df[['value', 'color' , 'extra']] = long_df['color_and_value'].str.split(' \| ', expand=True)
+            long_df['extra'] =  long_df['extra'].astype(float)
+            self.features.append("extra")
+        else:
+            long_df[['value', 'color']] = long_df['color_and_value'].str.split(' \| ', expand=True)
         long_df['value'] =  long_df['value'].astype(float)
+        
 
         codes, uniques = pd.factorize(long_df['color'])
         

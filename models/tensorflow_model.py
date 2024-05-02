@@ -14,7 +14,7 @@ import numpy as np
 
 class TensorFlowModel(AbstractModel):
     epochs = 20
-    prob = 0.31
+    prob = 0.54
 
     def __init__(self) -> None:
         self.encoder = OneHotEncoder()
@@ -36,7 +36,7 @@ class TensorFlowModel(AbstractModel):
         # No need for one-hot encoding in binary classification:
         # Remove the encoder fitting line
 
-        self.scaler = StandardScaler()
+        self.scaler = MinMaxScaler()
         X = self.scaler.fit_transform(X)
         
         
@@ -65,7 +65,7 @@ class TensorFlowModel(AbstractModel):
                 ])
                         
         # Compile the model
-        self.model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        self.model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])  
 
         # Train the model
         self.model.fit(
