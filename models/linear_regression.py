@@ -10,6 +10,8 @@ from .abstract_model import AbstractModel
 
 class LinReg(AbstractModel):
 
+    prob = 0.65
+
 
     def fit(self ,  X, y):
         # Splitting the dataset into the Training set and Test set
@@ -18,10 +20,9 @@ class LinReg(AbstractModel):
         self.model = LinearRegression()
         self.model.fit(X_train, y_train)
         # get accuracy
-        predicted_colors = self.model.predict(X_test)
-        print(predicted_colors)
+        predictions = self.model.predict(X_test)
         # predicted_colors = [round(x) for x in predicted_colors]
-        self.set_metrics(predicted_colors , y_test )
+        self.set_metrics((predictions > self.prob).astype("int32") , y_test)
         return True
     
     def predict(self, long_df):

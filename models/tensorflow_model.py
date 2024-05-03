@@ -13,8 +13,8 @@ import numpy as np
 
 
 class TensorFlowModel(AbstractModel):
-    epochs = 20
-    prob = 0.54
+    epochs = 10
+    prob = 0.5
 
     def __init__(self) -> None:
         self.encoder = OneHotEncoder()
@@ -49,21 +49,32 @@ class TensorFlowModel(AbstractModel):
 
         # Build the model
         self.model = Sequential([
-                    LSTM(64, input_shape=(X.shape[1], X.shape[2]), return_sequences=True),
-                    BatchNormalization(),
-                    Dropout(0.5),
-                    LSTM(32, return_sequences=False),
-                    BatchNormalization(),
-                    Dropout(0.5),
-                    Dense(64, activation='relu'),
-                    BatchNormalization(),
-                    Dropout(0.5),
-                    Dense(32, activation='relu'),
-                    BatchNormalization(),
-                    Dropout(0.5),
-                    Dense(1, activation='sigmoid')
-                ])
-                        
+                LSTM(128, input_shape=(X.shape[1], X.shape[2]), return_sequences=True),
+                BatchNormalization(),
+                Dropout(0.5),
+                LSTM(128, return_sequences=True),  # Added another LSTM layer with 128 neurons
+                BatchNormalization(),
+                Dropout(0.5),
+                LSTM(64, return_sequences=True),
+                BatchNormalization(),
+                Dropout(0.5),
+                LSTM(64, return_sequences=False),  # Another LSTM layer with 64 neurons
+                BatchNormalization(),
+                Dropout(0.5),
+                Dense(128, activation='relu'),
+                BatchNormalization(),
+                Dropout(0.5),
+                Dense(128, activation='relu'),  # Added another Dense layer with 128 neurons
+                BatchNormalization(),
+                Dropout(0.5),
+                Dense(64, activation='relu'),
+                BatchNormalization(),
+                Dropout(0.5),
+                Dense(64, activation='relu'),  # Another Dense layer with 64 neurons
+                BatchNormalization(),
+                Dropout(0.5),
+                Dense(1, activation='sigmoid')  # Output layer remains the same
+            ])
         # Compile the model
         self.model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])  
 
@@ -78,7 +89,6 @@ class TensorFlowModel(AbstractModel):
 
         predictions = self.model.predict(X_test)
 
-        print(predictions.mean())
         self.set_metrics((predictions > self.prob).astype("int32") , y_test)
         return True
 

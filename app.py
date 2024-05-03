@@ -5,7 +5,7 @@ import pandas as pd
 
 # from models.linear_regression import LinReg
 # from models.tensorflow_model import TensorFlowModel
-from models.tensorflow_model import TensorFlowModel
+from models.linear_regression import LinReg
 
 # Streamlit app code
 st.title('Predict Sphere')
@@ -23,7 +23,7 @@ if 'model_trained' not in st.session_state:
 
 
 if 'model' not in st.session_state:
-    st.session_state.model = TensorFlowModel()
+    st.session_state.model = LinReg()
     st.session_state.model.color_mapping = {}
 
 
@@ -35,7 +35,7 @@ def colorize(val):
     # Assuming 'val' is between 0 and 1 for the purpose of creating a gradient 
     # If your values have a different range, you need to normalize them first
     green_value = int(val * 255)
-    color = f'{green_value:02X}8000'  # Adjusted green channel based on 'val' proximity to 0
+    color = f'00FF00'  # Adjusted green channel based on 'val' proximity to 0
     style = f'background-color: #{color}'
     return style
 
@@ -86,7 +86,7 @@ if uploaded_file:
         st.success('The model has been successfully trained!')
         color_count = len(st.session_state.model.color_mapping)
         st.write(f'Mean Squared Error: {st.session_state.model.mse:.2f}')
-        st.write(f'Accuracy Percentage : {st.session_state.model.accuracy * 100:.2f}%')
+        st.write(f'for predictions higher than {st.session_state.model.prob :.2f}  Accuracy Percentage : {st.session_state.model.preferred_accuracy :.2f}')
 
 
     # Display the DataFrame with `next_color` column colored accordingly
@@ -96,7 +96,7 @@ if uploaded_file:
             st.write("Predicted DataFrame with next_color codes:")
             # Apply the coloring function to the 'next_color' column
             predicted_df = predicted_df.sort_values(by='next_color_code', ascending=False)
-            st.dataframe(predicted_df.style.map(colorize, subset=['next_color_code']))
+            st.dataframe(predicted_df)
         else:
             st.error('No predictions to display. Ensure model is trained and data is available.')
 
