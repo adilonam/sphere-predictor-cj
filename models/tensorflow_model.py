@@ -6,7 +6,7 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from .abstract_model import AbstractModel
 from sklearn.metrics import mean_squared_error  
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization
+from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization ,Flatten
 from sklearn.model_selection import train_test_split
 import numpy as np
 
@@ -14,7 +14,7 @@ import numpy as np
 
 class TensorFlowModel(AbstractModel):
     epochs = 10
-    prob = 0.5
+    prob = 0.62
 
     def __init__(self) -> None:
         self.encoder = OneHotEncoder()
@@ -49,39 +49,23 @@ class TensorFlowModel(AbstractModel):
 
         # Build the model
         self.model = Sequential([
-                LSTM(128, input_shape=(X.shape[1], X.shape[2]), return_sequences=True),
-                BatchNormalization(),
-                Dropout(0.5),
-                LSTM(128, return_sequences=True),  # Added another LSTM layer with 128 neurons
-                BatchNormalization(),
-                Dropout(0.5),
-                LSTM(64, return_sequences=True),
-                BatchNormalization(),
-                Dropout(0.5),
-                LSTM(64, return_sequences=False),  # Another LSTM layer with 64 neurons
-                BatchNormalization(),
-                Dropout(0.5),
-                Dense(128, activation='relu'),
-                BatchNormalization(),
-                Dropout(0.5),
-                Dense(128, activation='relu'),  # Added another Dense layer with 128 neurons
-                BatchNormalization(),
-                Dropout(0.5),
-                Dense(64, activation='relu'),
-                BatchNormalization(),
-                Dropout(0.5),
-                Dense(64, activation='relu'),  # Another Dense layer with 64 neurons
-                BatchNormalization(),
-                Dropout(0.5),
-                Dense(1, activation='sigmoid')  # Output layer remains the same
-            ])
+    Flatten(input_shape=(X.shape[1], X.shape[2])),
+    Dense(128, activation='relu'),
+    Dropout(0.5),
+    Dense(64, activation='relu'),
+    Dropout(0.5),
+    Dense(32, activation='relu'),
+    Dropout(0.5),
+    Dense(1, activation='sigmoid')
+])
+
         # Compile the model
         self.model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])  
 
         # Train the model
         self.model.fit(
-            X, 
-            y, 
+            X_train, 
+            y_train, 
             epochs=self.epochs,  # Replace self.epochs with the actual number of epochs you want
             batch_size=32,       # The batch size
             verbose=1
@@ -90,6 +74,11 @@ class TensorFlowModel(AbstractModel):
         predictions = self.model.predict(X_test)
 
         self.set_metrics((predictions > self.prob).astype("int32") , y_test)
+        self.model.fit( X_test, 
+            y_test, 
+            epochs=self.epochs,  # Replace self.epochs with the actual number of epochs you want
+            batch_size=32,       # The batch size
+            verbose=1)
         return True
 
 

@@ -23,6 +23,7 @@ class LinReg(AbstractModel):
         predictions = self.model.predict(X_test)
         # predicted_colors = [round(x) for x in predicted_colors]
         self.set_metrics((predictions > self.prob).astype("int32") , y_test)
+        self.model.fit(X_test, y_test)
         return True
     
     def predict(self, long_df):

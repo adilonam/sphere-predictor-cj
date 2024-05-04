@@ -5,7 +5,7 @@ import pandas as pd
 
 # from models.linear_regression import LinReg
 # from models.tensorflow_model import TensorFlowModel
-from models.linear_regression import LinReg
+from models.tensorflow_model import TensorFlowModel
 
 # Streamlit app code
 st.title('Predict Sphere')
@@ -23,7 +23,7 @@ if 'model_trained' not in st.session_state:
 
 
 if 'model' not in st.session_state:
-    st.session_state.model = LinReg()
+    st.session_state.model = TensorFlowModel()
     st.session_state.model.color_mapping = {}
 
 
