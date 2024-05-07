@@ -48,8 +48,16 @@ if uploaded_file:
     df = st.session_state.model.preprocess_excel(uploaded_file)
     st.write("DataFrame preview (with background color codes as values):")
     st.dataframe(df)
+    long_df  = st.session_state.model.process_excel(uploaded_file)
+    X, y  = st.session_state.model.train_test_split(long_df)
 
-
+    load_button_clicked = st.button('Load Model')
+    if load_button_clicked:
+        try:
+            st.session_state.model.load()
+            st.success(f'Model and scaler have been loaded. Last saved on: {st.session_state.model.last_save_time}')
+        except FileNotFoundError as e:
+            st.error('Model and scaler could not be found. Please train a model first.')
     # Button to train the model that uses session state
     if st.button('Train Model'):
 
@@ -60,11 +68,11 @@ if uploaded_file:
         # Some arbitrary divisions of progress (you will adjust these based on the actual progress of your steps)
         progress_bar.progress(10)
         progress_text.text("Processing Excel file...")
-        long_df  = st.session_state.model.process_excel(uploaded_file)
+        
         
         progress_bar.progress(30)
         progress_text.text("Splitting data for training and testing...")
-        X, y  = st.session_state.model.train_test_split(long_df)
+        
 
         progress_bar.progress(50)
         progress_text.text("Training the model...")
@@ -87,7 +95,10 @@ if uploaded_file:
         color_count = len(st.session_state.model.color_mapping)
         st.write(f'Mean Squared Error: {st.session_state.model.mse:.2f}')
         st.write(f'for predictions higher than {st.session_state.model.prob :.2f}  Accuracy Percentage : {st.session_state.model.preferred_accuracy :.2f}')
-
+        save_button_clicked = st.button('Save Model')
+        if save_button_clicked:
+            st.session_state.model.save()
+            st.success(f'Model and scaler have been saved. Last saved on: {st.session_state.model.last_save_time}')
 
     # Display the DataFrame with `next_color` column colored accordingly
     if st.button('Show Predictions'):

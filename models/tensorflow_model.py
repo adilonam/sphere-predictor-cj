@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import pandas as pd
 from sklearn.discriminant_analysis import StandardScaler
@@ -8,17 +9,45 @@ from sklearn.metrics import mean_squared_error
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization ,Flatten
 from sklearn.model_selection import train_test_split
-import numpy as np
+from tensorflow.keras.models import load_model
+import joblib
+
 
 
 
 class TensorFlowModel(AbstractModel):
-    epochs = 10
-    prob = 0.62
+    epochs = 30
+    prob = 0.61
+    last_save_time = None
 
     def __init__(self) -> None:
         self.encoder = OneHotEncoder()
         super().__init__()
+
+    def save(self, path = './.models'):
+        # Save the TensorFlow model
+        self.model.save(f'{path}/tensorflow/model.h5')
+        
+        # Save the scaler
+        joblib.dump(self.scaler, f'{path}/tensorflow/scaler.pkl')
+
+        # Get the current time as a string
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.last_save_time = current_time
+        
+        # Store the timestamp in a separate text file
+        with open(f'{path}/tensorflow/time.txt', 'w') as f:
+            f.write(current_time)
+
+    def load(self, path ='./.models' ):
+        # Load the TensorFlow model
+        self.model = load_model(f'{path}/tensorflow/model.h5')
+        
+        # Load the scaler
+        self.scaler = joblib.load( f'{path}/tensorflow/scaler.pkl')
+        # For the plain text file
+        with open(f'{path}/tensorflow/time.txt', 'r') as f:
+            self.last_save_time = f.read()
 
 
 

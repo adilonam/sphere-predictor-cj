@@ -92,7 +92,8 @@ class AbstractModel:
         if self.is_sheet2:
             long_df[['value', 'color' , 'extra']] = long_df['color_and_value'].str.split(' \| ', expand=True)
             long_df['extra'] =  long_df['extra'].astype(float)
-            self.features.append("extra")
+            if "extra" not in self.features:
+                self.features.append("extra")
         else:
             long_df[['value', 'color']] = long_df['color_and_value'].str.split(' \| ', expand=True)
         long_df['value'] =  long_df['value'].astype(float)
