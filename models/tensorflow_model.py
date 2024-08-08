@@ -16,7 +16,7 @@ import joblib
 
 
 class TensorFlowModel(AbstractModel):
-    epochs = 30
+    epochs = 100
     prob = 0.61
     last_save_time = None
 

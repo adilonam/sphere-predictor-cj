@@ -124,7 +124,7 @@ class AbstractModel:
         
         long_df['color_group'] = long_df['color'].map(self.color_group_dict).astype(int)
         
-        long_df['next_color_group'] = long_df.groupby('name_code')['color_binary'].shift(-1)
+        long_df['next_color_group'] = long_df.groupby('name_code')['color_group'].shift(-1)
         
 
         
