@@ -14,7 +14,7 @@ class AbstractModel:
     
     color_mapping = {}
     features = ["date_code"  ,'name_code' , 'day_of_year', 'day_of_month', 'day_of_week' ,"color_code" , 'value'  ] #  'day_of_year', 'day_of_month', 'day_of_week'
-    target = 'next_color_group'
+    target = 'next_color_binary'
     last_long_df = None
     preferred_color = ['00FF00' , 'FFFF00'  , 'FF0000']      
     # ['#FF0000' red , 'FF9900' orange , 'D5A6BD' purple, '00FF00' green  , 'FFFF00' yellow, '00FFFF' blue]
