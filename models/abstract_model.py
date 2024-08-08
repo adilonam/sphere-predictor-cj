@@ -111,8 +111,6 @@ class AbstractModel:
         long_df['next_color_binary'] = long_df.groupby('name_code')['color_binary'].shift(-1)
 
         
-        
-
         return long_df 
 
 
