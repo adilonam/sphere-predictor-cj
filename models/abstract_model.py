@@ -14,12 +14,20 @@ class AbstractModel:
     
     color_mapping = {}
     features = ["date_code"  ,'name_code' , 'day_of_year', 'day_of_month', 'day_of_week' ,"color_code" , 'value'  ] #  'day_of_year', 'day_of_month', 'day_of_week'
-    target = 'next_color_binary'
+    target = 'next_color_group'
     last_long_df = None
-    preferred_color = ['D5A6BD' , 'FFC000'  , '9BC2E6', '8EA9DB' ]      
-    # ['A9D08E' green , '9BC2E6' blue , 'FFC000' orange, 'FFFF00' yellow  0.42, 'D5A6BD' purple, 'FF0000' red, '8EA9DB' blue]
+    preferred_color = ['00FF00' , 'FFFF00'  , 'FF0000']      
+    # ['#FF0000' red , 'FF9900' orange , 'D5A6BD' purple, '00FF00' green  , 'FFFF00' yellow, '00FFFF' blue]
     last_df = None
     is_sheet2 = True
+    color_group_dict = {
+        "FF0000": 3, 
+        "00FF00": 1, 
+        "FFFF00": 1, 
+        "00FFFF": 2, 
+        "FF9900": 2, 
+        "D5A6BD": 2,
+    }
 
     def preprocess_excel(self, uploaded_file):
         # Load the workbook
@@ -41,6 +49,7 @@ class AbstractModel:
         # Create a DataFrame from Sheet2 without changes
         if self.is_sheet2:
             df_sheet2 = pd.read_excel(uploaded_file, engine='openpyxl', sheet_name='Sheet2')
+            print((df_sheet1.shape , df_sheet2.shape))
             assert (df_sheet1.shape == df_sheet2.shape), "Shape in df_sheet1 and df_sheet2 do not match."
             for i in range(1, df_sheet1.shape[1]):
                 df_sheet1.iloc[:, i] = df_sheet1.iloc[:, i].astype(str) + ' | ' + df_sheet2.iloc[:, i].astype(str)
@@ -55,6 +64,9 @@ class AbstractModel:
             return 1
         else:
             return 0
+    
+ 
+       
 
     def process_data(self ,df):
         if self.color_mapping:
@@ -100,15 +112,20 @@ class AbstractModel:
         
 
         codes, uniques = pd.factorize(long_df['color'])
-        
+        self.current_colors = uniques
         # Add 1 to codes to start numbering from 1 instead of 0
         long_df['color_code'] = codes 
         long_df['next_color_code'] = long_df.groupby('name_code')['color_code'].shift(-1)
         long_df['previous_color_code'] = long_df.groupby('name_code')['color_code'].shift(1)
-       
+
         long_df['color_binary'] = long_df['color'].map(lambda x : self.color_change(x)).astype(int)
         
         long_df['next_color_binary'] = long_df.groupby('name_code')['color_binary'].shift(-1)
+        
+        long_df['color_group'] = long_df['color'].map(self.color_group_dict).astype(int)
+        
+        long_df['next_color_group'] = long_df.groupby('name_code')['color_binary'].shift(-1)
+        
 
         
         return long_df 
