@@ -8,7 +8,7 @@ import pandas as pd
 from models.tensorflow_model import TensorFlowModel
 
 # Streamlit app code
-st.title('Predict Sphere')
+st.title('Predict Sphere CJ')
 
 
 
@@ -94,7 +94,6 @@ if uploaded_file:
         st.success('The model has been successfully trained!')
         color_count = len(st.session_state.model.color_mapping)
         st.write(f'Mean Squared Error: {st.session_state.model.mse:.2f}')
-        st.write(f'for predictions higher than {st.session_state.model.prob :.2f}  Accuracy Percentage : {st.session_state.model.preferred_accuracy :.2f}')
         save_button_clicked = st.button('Save Model')
         if save_button_clicked:
             st.session_state.model.save()
@@ -105,6 +104,8 @@ if uploaded_file:
         predicted_df = st.session_state.model.predict_last()
         if not predicted_df.empty:
             st.write("Predicted DataFrame with next_color codes:")
+            st.write('Prediction close of 1 mean: Red, Green, Yellow')
+            st.write('Prediction close of 0 mean: Orange, Purple, Blue')
             # Apply the coloring function to the 'next_color' column
             predicted_df = predicted_df.sort_values(by='next_color_code', ascending=False)
             st.dataframe(predicted_df)
