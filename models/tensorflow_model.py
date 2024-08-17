@@ -16,7 +16,7 @@ import joblib
 
 
 class TensorFlowModel(AbstractModel):
-    epochs = 4
+    epochs = 50
     prob = 0.61
     last_save_time = None
 
@@ -69,24 +69,20 @@ class TensorFlowModel(AbstractModel):
         # X = self.scaler.fit_transform(X)
         
         
-        X = self.reshape_input(X)
+        # X = self.reshape_input(X)
         # Split the data
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,shuffle=False)
 
         # No need to reshape X_train since we are assuming
         # it has already been reshaped for LSTM layers appropriately
 
         # Build the model
         self.model = Sequential([
-    Flatten(input_shape=(X.shape[1], X.shape[2])),
-    Dense(128, activation='relu'),
-    Dropout(0.5),
-    Dense(64, activation='relu'),
-    Dropout(0.5),
-    Dense(32, activation='relu'),
-    Dropout(0.5),
-    Dense(1, activation='sigmoid')
-])
+            Dense(8, input_dim=X.shape[1], activation='relu'),
+            Dense(4, activation='relu'),
+            Dense(2, activation='relu'),
+            Dense(1, activation='sigmoid')  # 3 output classes
+        ])
 
         # Compile the model
         self.model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])  
