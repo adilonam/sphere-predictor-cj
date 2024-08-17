@@ -13,7 +13,8 @@ from sklearn.metrics import accuracy_score
 class AbstractModel:
     
     color_mapping = {}
-    features = ["date_code"  ,'name_code' , 'day_of_year', 'day_of_month', 'day_of_week' ,"color_code" , 'value'  ] #  'day_of_year', 'day_of_month', 'day_of_week'
+    # features = ['name_code' ,"color_code" , 'value'  ] #  'day_of_year', 'day_of_month', 'day_of_week'
+    features = ["date_code"  ,'name_code' , 'day_of_year', 'day_of_month', 'day_of_week' ,"color_code" , 'value'  ]
     target = 'next_color_binary'
     last_long_df = None
     preferred_color = ['00FF00' , 'FFFF00'  , 'FF0000']      
@@ -21,12 +22,12 @@ class AbstractModel:
     last_df = None
     is_sheet2 = True
     color_group_dict = {
-        "FF0000": 3, 
-        "00FF00": 1, 
-        "FFFF00": 1, 
-        "00FFFF": 2, 
-        "FF9900": 2, 
-        "D5A6BD": 2,
+        "FF0000": 1, # red 
+        "00FF00": 2, # green
+        "FFFF00": 3, 
+        "00FFFF": 4, 
+        "FF9900": 5, 
+        "D5A6BD": 6,
     }
 
     def preprocess_excel(self, uploaded_file):

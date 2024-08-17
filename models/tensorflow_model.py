@@ -16,7 +16,7 @@ import joblib
 
 
 class TensorFlowModel(AbstractModel):
-    epochs = 100
+    epochs = 50
     prob = 0.61
     last_save_time = None
 
@@ -29,7 +29,7 @@ class TensorFlowModel(AbstractModel):
         self.model.save(f'{path}/tensorflow/model.h5')
         
         # Save the scaler
-        joblib.dump(self.scaler, f'{path}/tensorflow/scaler.pkl')
+        # joblib.dump(self.scaler, f'{path}/tensorflow/scaler.pkl')
 
         # Get the current time as a string
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -44,7 +44,7 @@ class TensorFlowModel(AbstractModel):
         self.model = load_model(f'{path}/tensorflow/model.h5')
         
         # Load the scaler
-        self.scaler = joblib.load( f'{path}/tensorflow/scaler.pkl')
+        # self.scaler = joblib.load( f'{path}/tensorflow/scaler.pkl')
         # For the plain text file
         with open(f'{path}/tensorflow/time.txt', 'r') as f:
             self.last_save_time = f.read()
@@ -65,28 +65,24 @@ class TensorFlowModel(AbstractModel):
         # No need for one-hot encoding in binary classification:
         # Remove the encoder fitting line
 
-        self.scaler = MinMaxScaler()
-        X = self.scaler.fit_transform(X)
+        # self.scaler = MinMaxScaler()
+        # X = self.scaler.fit_transform(X)
         
         
-        X = self.reshape_input(X)
+        # X = self.reshape_input(X)
         # Split the data
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,shuffle=False)
 
         # No need to reshape X_train since we are assuming
         # it has already been reshaped for LSTM layers appropriately
 
         # Build the model
         self.model = Sequential([
-    Flatten(input_shape=(X.shape[1], X.shape[2])),
-    Dense(128, activation='relu'),
-    Dropout(0.5),
-    Dense(64, activation='relu'),
-    Dropout(0.5),
-    Dense(32, activation='relu'),
-    Dropout(0.5),
-    Dense(1, activation='sigmoid')
-])
+            Dense(8, input_dim=X.shape[1], activation='relu'),
+            Dense(4, activation='relu'),
+            Dense(2, activation='relu'),
+            Dense(1, activation='sigmoid')  # 3 output classes
+        ])
 
         # Compile the model
         self.model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])  
@@ -108,14 +104,14 @@ class TensorFlowModel(AbstractModel):
             epochs=self.epochs,  # Replace self.epochs with the actual number of epochs you want
             batch_size=32,       # The batch size
             verbose=1)
-        return True
+        return X_test , y_test, predictions
 
 
 
 
     def predict(self, long_df):
         X = long_df[self.features].values
-        X = self.scaler.transform(X)
+        # X = self.scaler.transform(X)
         X = self.reshape_input(X)
         
         predictions = self.model.predict(X)
