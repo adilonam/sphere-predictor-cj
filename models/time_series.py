@@ -2,10 +2,21 @@ import pandas as pd
 import openpyxl
 import tempfile
 from sklearn.metrics import mean_squared_error, accuracy_score
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 import numpy as np
 
-class AbstractModel:
+from models.abstract_model import AbstractModel
+
+
+
+
+
+class TimeSeries(AbstractModel):
+    def __init__(self) -> None:
+        self.encoder = OneHotEncoder(sparse_output=False)
+        self.scaler = MinMaxScaler()
+        super().__init__()
+        
     color_mapping = {}
     features = ["date_code", "name_code", 'day_of_year', 'day_of_month', 'day_of_week', "color_group", 'value', "extra"]
     target = 'next_color_group'
@@ -16,11 +27,12 @@ class AbstractModel:
     color_group_dict = {
         "FF0000": 1,  # red
         "00FF00": 2,  # green
-        "FFFF00": 3, # yellow
-        "00FFFF": 4,  # blue
-        "FF9900": 5,  # orange
-        "D5A6BD": 6,  # purple
+        "FFFF00": 3,
+        "00FFFF": 4,
+        "FF9900": 5,
+        "D5A6BD": 6,
     }
+    timesteps = 20
 
     def preprocess_excel(self, uploaded_file):
         wb = openpyxl.load_workbook(filename=uploaded_file)
@@ -79,51 +91,28 @@ class AbstractModel:
         long_df['next_color_group'] = long_df.groupby('name_code')['color_group'].shift(-1)
 
         return long_df
+    
+    def split_data(self, df):
+        
+        X = df[self.features].values
+        y = df[self.target].values
+        
+        X = self.scaler.fit_transform(X)
+        y = self.encoder.fit_transform(y.reshape(-1, 1))
 
-    def process_excel(self, uploaded_file):
-        df = self.preprocess_excel(uploaded_file)
-        return self.process_data(df)
-
-    def set_metrics(self, predictions, y_test):
-        self.mse = mean_squared_error(y_test, predictions)
-        self.accuracy = accuracy_score(y_test, predictions)
-        correct = 0
-        self.predictions_count = 0
-        self.y_test_count = 0
-
-        for t, p in zip(y_test, predictions):
-            if t == p and t == 1:
-                correct += 1
-            if p == 1:
-                self.predictions_count += 1
-            if t == 1:
-                self.y_test_count += 1
-
-        self.preferred_accuracy = correct / self.predictions_count if self.predictions_count != 0 else 0
-
-    def color_mapper(self, x):
-        if x in self.color_mapping:
-            return self.color_mapping[x]
-        else:
-            last_key = sorted(self.color_mapping.keys())[-1]
-            return self.color_mapping[last_key]
-
-    def predict_last(self):
-        if self.last_long_df is None:
-            raise Exception('Must be trained')
-        predictions = self.predict(self.last_long_df)
-        predicted_df = self.last_df
-        predicted_df['color_and_value'] = self.last_long_df['color_and_value'].values
-        predicted_df['next_color_code'] = predictions
-        return predicted_df
-
-    def train_test_split(self, long_df):
-        self.last_long_df = long_df[-self.row_count:]
-        long_df = long_df.dropna(axis=0)
-        X = long_df[self.features].values
-        y = long_df[self.target].values
-
+        X, y = self.create_sequences(X, y , self.timesteps)
         return X, y
-
-    def predict(self, X):
-        raise NotImplementedError('Not implemented')
+    
+    def create_sequences(self , X,y, timesteps):
+        sequences = []
+        labels = []
+        for i in range(len(X) - timesteps):
+            sequences.append(X[i:i + timesteps])
+            labels.append(y[i + timesteps-1])
+        
+        
+        return np.array(sequences), np.array(labels)
+        
+        
+    
+    

@@ -62,7 +62,9 @@ class TensorFlowModel(AbstractModel):
         self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
         self.model.fit(X, y, epochs=self.epochs, batch_size=32, verbose=1)
-        return True
+        
+        all_predictions = self.model.predict(X)
+        return all_predictions
 
     def predict(self, long_df):
         X = long_df[self.features].values
