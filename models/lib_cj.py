@@ -10,7 +10,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization, Bi
 class CjModel:
     features = ["date_as_int", 'day_of_year',"name_code", 'day_of_month', 'day_of_week', "v1", 'v2', "v3","v4"]
     target = 'v2'
-    timesteps = 1
+    timesteps = 10
     color_code = {
         "FF0000": 1,  # red
         "00FF00": 2,  # green
@@ -121,7 +121,7 @@ class CjModel:
         
 
         # Split the data
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, shuffle=False)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
         
         input_shape = (self.timesteps, X.shape[2])
         # Define the LSTM model
@@ -174,7 +174,7 @@ class CjModel:
         
         y_test_labels = self.encoder.inverse_transform(y_test)
         
-        return predictions_labels , y_test_labels
+        return predictions , y_test_labels
 
         
 
