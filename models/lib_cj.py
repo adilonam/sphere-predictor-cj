@@ -1,14 +1,18 @@
+from datetime import datetime
+import os
 import pandas as pd
 import openpyxl
 import tempfile
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, OneHotEncoder
 import numpy as np
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential ,  load_model
 from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization, Bidirectional, Flatten
+import joblib
+
 
 class CjModel:
-    features = ["date_as_int", 'day_of_year',"name_code", 'day_of_month', 'day_of_week', "v1", 'v2', "v3","v4"]
+    features = ["date_as_int", 'day_of_year',"name_code", 'day_of_month', 'day_of_week', "v1", 'v2', "v3","v4" , 'v5' , 'v6']
     target = 'v2'
     timesteps = 10
     color_code = {
@@ -18,10 +22,10 @@ class CjModel:
         "00FFFF": 4,  # blue
         "FF9900": 5,  # orange
         "D5A6BD": 6,  # purple
-         "CC4125": 7, # red
+         "CC4125": 7, # maroon
     }
     
-    epochs = 50
+    epochs = 100
     def __init__(self) -> None:
         self.encoder = OneHotEncoder(sparse_output=False)
         self.scaler = StandardScaler()
@@ -54,8 +58,24 @@ class CjModel:
         #sheet4
         df_sheet4 = pd.read_excel(uploaded_file, engine='openpyxl', sheet_name='Sheet4')
         
+        df_sheet5 = pd.read_excel(uploaded_file, engine='openpyxl', sheet_name='Sheet5')
         
-        combined_df = df_sheet1.astype(str) + ' | ' + df_sheet2.astype(str) + ' | ' + df_sheet3.astype(str) + ' | ' + df_sheet4.astype(str)
+        df_sheet6 = pd.read_excel(uploaded_file, engine='openpyxl', sheet_name='Sheet6')
+        sheet_shapes = {
+        'Sheet1': df_sheet1.shape,
+        'Sheet2': df_sheet2.shape,
+        'Sheet3': df_sheet3.shape,
+        'Sheet4': df_sheet4.shape,
+        'Sheet5': df_sheet5.shape,
+        'Sheet6': df_sheet6.shape,
+        }
+        
+        # Check if all shapes are the same
+        all_shapes = list(sheet_shapes.values())
+        if len(set(all_shapes)) > 1:
+            raise ValueError("Not all sheets have the same shape. Shapes are: {}".format(sheet_shapes))
+        
+        combined_df = df_sheet1.astype(str) + ' | ' + df_sheet2.astype(str) + ' | ' + df_sheet3.astype(str) + ' | ' + df_sheet4.astype(str) + ' | ' + df_sheet5.astype(str) + ' | ' + df_sheet6.astype(str) 
 
 
         combined_df.iloc[:, 0] = df_sheet1.iloc[:, 0]
@@ -82,7 +102,7 @@ class CjModel:
         long_df['day_of_year'] = long_df['date'].dt.dayofyear.astype(int)
 
 
-        long_df[['v1', 'v2', 'v3', "v4"]] = long_df['all_values'].str.split(' \| ', expand=True).astype(float)
+        long_df[['v1', 'v2', 'v3', "v4" , "v5", "v6"]] = long_df['all_values'].str.split(' \| ', expand=True).astype(float)
 
         return long_df
 
@@ -174,11 +194,26 @@ class CjModel:
         
         y_test_labels = self.encoder.inverse_transform(y_test)
         
-        return predictions , y_test_labels
+        return predictions_labels , y_test_labels , predictions , y_test
 
         
 
     def predict_last(self, last_X):
         prediction = self.model.predict(last_X)
-        prediction = self.encoder.inverse_transform(prediction)
-        return prediction
+        prediction_label = self.encoder.inverse_transform(prediction)
+        return prediction_label , prediction
+
+    
+    def save(self, path='./.models/cj_model'):
+        
+        os.makedirs(path, exist_ok=True)
+        
+        self.model.save(f'{path}/model.h5')
+        joblib.dump(self.scaler, f'{path}/scaler.pkl')
+        joblib.dump(self.encoder, f'{path}/encoder.pkl')
+
+
+    def load(self , path='./.models/cj_model'):
+        self.model = load_model(f'{path}/model.h5')
+        self.scaler = joblib.load(f'{path}/scaler.pkl')
+        self.encoder = joblib.load(f'{path}/encoder.pkl')
