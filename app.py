@@ -46,13 +46,13 @@ if uploaded_file and cj_number:
             
             
             # Create a DataFrame for better visualization
-            color_labels = ['Red', 'Green', 'Yellow', 'Blue', 'Orange', 'Purple', 'Maroon']
+            color_labels = ['white', 'Green', 'Yellow']
             df = pd.DataFrame(prediction, columns=color_labels)
             st.dataframe(df)
             
             # Display the conversion of prediction labels
             st.write("**Convert this Code to Winner Color Using:**")
-            color_mapping = {1: 'Red', 2: 'Green', 3: 'Yellow', 4: 'Blue', 5: 'Orange', 6: 'Purple', 7: 'Maroon'}
+            color_mapping = {1: 'white', 2: 'Green', 3: 'Yellow'}
             winner_color = color_mapping[prediction_label[0,0]]
             st.markdown(f"<p style='color:green;'>Prediction Label (Converted): {winner_color}</p>", unsafe_allow_html=True)
         else:

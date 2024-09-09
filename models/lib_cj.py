@@ -16,14 +16,14 @@ class CjModel:
     target = 'v2'
     timesteps = 10
     color_code = {
-        "FF0000": 1,  # red
+        "000000": 1,  # black / white
         "00FF00": 2,  # green
         "FFFF00": 3, # yellow
-        "00FFFF": 4,  # blue
-        "FF9900": 5,  # orange
-        "D5A6BD": 6,  # purple
-         "CC4125": 7, # maroon
     }
+    
+    
+    
+    unique_colors = []
     
     epochs = 100
     def __init__(self) -> None:
@@ -44,12 +44,14 @@ class CjModel:
         for row in ws_sheet2.iter_rows(min_row=2, min_col=2):
             for cell in row:
                 color_hex = cell.fill.start_color.index[2:] if cell.fill.start_color.index else 'None'
-                cell.value = color_hex
+                cell.value = str(color_hex)
                 
         with tempfile.NamedTemporaryFile() as tmp:
             wb.save(tmp.name)
             tmp.seek(0)
-            df_sheet2 = pd.read_excel(tmp, engine='openpyxl', sheet_name='Sheet2')       
+            df_sheet2 = pd.read_excel(tmp, engine='openpyxl', sheet_name='Sheet2')
+            df_sheet2.replace(0, "000000", inplace=True)
+            self.unique_colors =  pd.unique(df_sheet2.iloc[:, 1:].values.flatten())     
             df_sheet2 = df_sheet2.replace(self.color_code)
 
         
